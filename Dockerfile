@@ -15,11 +15,9 @@ COPY . .
 # exposes http port
 EXPOSE 3000
 
-# exposes tcp port
-EXPOSE 3002
-
 # exposes udp port
-EXPOSE 3004
+EXPOSE 3004/udp
+
 
 # starts node js 
 CMD ["npm", "start"]
