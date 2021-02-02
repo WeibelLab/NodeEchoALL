@@ -36,8 +36,7 @@ var logger  = winston.createLogger(
 
 const sanitizeHtml = require('sanitize-html');
 
-const httpPort = process.env.HTTPPORT || 3000
-const tcpPort = process.env.TCPPORT || 3002
+const httpPort = process.env.HTTPPORT || 3000  // HTTP is TCP you fool ;)
 const udpPort = process.env.UDPPORT || 3004
 
 
