@@ -5,7 +5,11 @@
 const dgram = require('dgram');
 
 // logging
-var winston = require('winston');
+var winston =  require('winston');
+const myFormat = winston.format.printf(({ level, message, timestamp }) => {
+  return `${timestamp} ${level}: ${message}`;
+});
+
 var expressWinston = require('express-winston');
 var loglist = [];
 const stream = require('stream');
@@ -16,9 +20,15 @@ memoryLogStream._write = (chunk, encoding, next) => {
      next()
 }
 
-const streamTransport = new winston.transports.Stream({ stream: memoryLogStream })
+const streamTransport = new winston.transports.Stream({ 'stream': memoryLogStream, 'timestamp':true, 'json':false })
 
-var logger  = winston.createLogger({
+var logger  = winston.createLogger(
+{
+	  format: winston.format.combine(
+		
+    winston.format.timestamp(),
+    myFormat
+    ),
     transports: [
       new (winston.transports.Console)({'timestamp':true}),
 		  streamTransport]
@@ -38,18 +48,17 @@ var StringBuffer = require("stringbuffer");
 const express    = require('express')
 const httpServer = express()
 const udpServer  = dgram.createSocket('udp4');
-
-httpServer.use(expressWinston.logger({
-      transports: [
-        new winston.transports.Console()
-      ],
-      expressFormat: true
-    }));
+httpServer.set('trust proxy', true);
+httpServer.use((req, res, next) =>
+{
+ logger.info("[HTTP] Received "+req.method+" "+req.originalUrl+" from " + req.connection.remoteAddress);
+ next();
+});
 
 // http server callbacks
 httpServer.use('/echo', (req, res) =>
 {
- winston.log("info","[HTTP] Received "+req.method+" /echo request from " + req.ip + " with the following content[40]: " + req.originalUrl.substring(0,40));
+ logger.info("[HTTP] Received "+req.method+" /echo request from " + req.ip + " with the following content[40]: " + req.originalUrl.substring(0,40));
  res.send(req.originalUrl);
 });
 
@@ -63,10 +72,10 @@ httpServer.get('/logs', (req, res) =>
 	{
 		lastLogOperation = Date.now();
 		var sb = new StringBuffer();
-		sb.append("<html><head><title>Logs</title></head><body><h3>Logs until");
+		sb.append("<html><head><title>Logs</title></head><body><h3>Logs generated at ");
 		sb.append(Date());
 		sb.append("</h3><body>");
-		for (let i =0; i < loglist.length; ++i)
+		for (let i =loglist.length-1; i >=0; --i)
 		{
 			sb.append("<li>");
 			sb.append(sanitizeHtml(loglist[i]));
@@ -88,11 +97,42 @@ httpServer.get('/myip', (req, res) =>
   res.send("Hello, your IP is "+req.ip);
 });
 
+httpServer.use((req, res) =>
+{
+  res.send(";]");
+});
+
 //
-// starting all servers
+// ================================================== UDP ==================================================================
 //
 
+
+
+udpServer.on('error', (err) => {
+	logger.error("UDP 'server' could not start " + err);
+  udpServer.close();
+});
+
+udpServer.on('message', (msg, rinfo) => {
+	logger.info(`UDP ${udpPort} got: ${msg} from ${rinfo.address}:${rinfo.port}`)
+  udpServer.send(msg, rinfo.port, rinfo.address);
+});
+
+udpServer.on('listening', () => {
+  const address = udpServer.address();
+  logger.info(`UDP listening at ${address.port}`);
+});
+
+
+
+//
+// ================================================== STARTING EVERYTHING ==================================================================
+//
+
+
+udpServer.bind(udpPort);
+
 httpServer.listen(httpPort, () => {
-  winston.log("info","HTTP Server listening on port " + httpPort)
+  logger.info("HTTP Server listening on port " + httpPort)
 })
 
