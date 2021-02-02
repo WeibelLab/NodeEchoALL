@@ -2,7 +2,7 @@
 
 # This script deploys this system to docker
 
-if [ $# -lt 4 ]; then
+if [ $# -lt 2 ]; then
   echo -e "Usage: $0 <nodejs http port> <nodejs udp port>"
   echo -e "\t<nodejs http port>: Port where NodeJs should listen"
   echo -e "\t<udp port>: External port that binds to the container's internal port"
@@ -58,9 +58,9 @@ docker rm nodeechoall
 docker run -d -t \
 --name nodeechoall \
 --restart unless-stopped \
--p 127.0.0.1:$APP_HTTP_PORT_EXTERNAL:$APP_HTTP_PORT_INTERNAL \
+-p $APP_HTTP_PORT_EXTERNAL:$APP_HTTP_PORT_INTERNAL \
 -p $APP_UDP_PORT_EXTERNAL:$APP_UDP_PORT_INTERNAL\/udp \
-"weibellab/nodeechoalL"
+"weibellab/nodeechoall"
 
 echo "Launched Docker"
 
