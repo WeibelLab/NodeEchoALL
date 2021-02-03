@@ -10,7 +10,14 @@ HTTP (TCP) and UDP echo servers for testing networking tools
 
 
 ## UDP Interface
-The UDP echoes user messages back to the user that sent them.
+The UDP echoes user messages back to the user that sent them. You can use the python3 script `udpecho.py` to test it
+
+```
+$ python udpecho.py -c SERVER PORT
+udp echo client ready, reading stdin
+hello
+client received b'hello\n' from ('SERVER', PORT)
+```
 
 ## HTTP interface
 ### /myip
